@@ -1,0 +1,27 @@
+[
+    {
+      "id": 1,
+      "question": "What comes after number 4?",
+      "options": ["2", "5", "3", "1"],
+      "answer": "5",
+      "topic": "numbers",
+      "level": "easy"
+    },
+    {
+      "id": 2,
+      "question": "Which day comes after Monday?",
+      "options": ["Sunday", "Tuesday", "Friday", "Wednesday"],
+      "answer": "Tuesday",
+      "topic": "days",
+      "level": "easy"
+    },
+    {
+      "id": 3,
+      "question": "What number is missing: 1, 2, __, 4?",
+      "options": ["3", "5", "6", "0"],
+      "answer": "3",
+      "topic": "numbers",
+      "level": "medium"
+    }
+  ]
+  
