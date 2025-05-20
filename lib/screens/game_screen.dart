@@ -6,6 +6,9 @@ import '../models/child_profile.dart';
 import '../models/score.dart';
 import '../services/local_storage_service.dart';
 import 'results_screen.dart';
+import 'tracing/alphabet_tracing_canvas.dart';
+import 'tracing/number_tracing_canvas.dart';
+import 'tracing/shape_tracing_canvas.dart';
 
 class GameScreen extends StatefulWidget {
   final ChildProfile profile;
@@ -17,13 +20,30 @@ class GameScreen extends StatefulWidget {
 
 enum Difficulty { easy, medium, difficult }
 
-enum GameType { number, day, sequence, clock }
+enum GameType {
+  number,
+  day,
+  sequence,
+  clock,
+  alphabetTracing,
+  countObjects,
+  numberTracing,
+  shapeTracing,
+}
 
 class _GameScreenState extends State<GameScreen> {
   GameType _selectedGame = GameType.number;
   Difficulty _difficulty = Difficulty.easy;
+  String targetLetter = '';
+  List<String> _alphabet = List.generate(
+    26,
+    (i) => String.fromCharCode(65 + i),
+  );
+  int objectCount = 0;
+  List<int> _countOptions = [];
 
-  int targetNumber = 1;
+  int targetNumber = 1; // Number tracing
+
   int selectedNumber = -1;
 
   final List<String> _days = [
@@ -92,8 +112,13 @@ class _GameScreenState extends State<GameScreen> {
     int missingIndex = Random().nextInt(4);
     _missingValue = _sequence[missingIndex];
     _sequence[missingIndex] = -1;
-    _sequenceOptions = [_missingValue!, _missingValue! + 1, _missingValue! - 1]
-      ..shuffle();
+    _sequenceOptions =
+        {
+            _missingValue!,
+            _missingValue! + 1,
+            _missingValue! - 1,
+          }.where((num) => num > 0).toList()
+          ..shuffle();
   }
 
   void _generateClockGame() {
@@ -108,6 +133,47 @@ class _GameScreenState extends State<GameScreen> {
         minute: (minute + 15) % 60,
       ).format(context),
     ]..shuffle();
+  }
+
+  void _generateAlphabetTracingGame() {
+    targetLetter = _alphabet[Random().nextInt(_alphabet.length)];
+  }
+
+  void _generateCountObjectsGame() {
+    objectCount = Random().nextInt(5) + 1;
+    _countOptions = [objectCount, objectCount + 1, objectCount + 2]..shuffle();
+  }
+
+  void _navigateToCanvas() {
+    switch (_selectedGame) {
+      case GameType.alphabetTracing:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AlphabetTracingCanvas(letter: targetLetter),
+          ),
+        );
+        break;
+      case GameType.numberTracing:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => NumberTracingCanvas(number: targetNumber.toString()),
+          ),
+        );
+        break;
+      case GameType.shapeTracing:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ShapeTracingCanvas(shape: "CIRCLE"),
+          ),
+        );
+        break;
+      default:
+        break;
+    }
   }
 
   void _checkAnswer(dynamic answer) async {
@@ -126,6 +192,18 @@ class _GameScreenState extends State<GameScreen> {
         break;
       case GameType.clock:
         correct = answer == _targetTime.format(context);
+        break;
+      case GameType.alphabetTracing:
+        _generateAlphabetTracingGame();
+        break;
+      case GameType.countObjects:
+        _generateCountObjectsGame();
+        break;
+      case GameType.shapeTracing:
+        _navigateToCanvas();
+        break;
+      case GameType.numberTracing:
+        _navigateToCanvas();
         break;
     }
 
@@ -182,6 +260,18 @@ class _GameScreenState extends State<GameScreen> {
         case GameType.clock:
           _generateClockGame();
           break;
+        case GameType.alphabetTracing:
+          _generateAlphabetTracingGame();
+          break;
+        case GameType.countObjects:
+          _generateCountObjectsGame();
+          break;
+        case GameType.shapeTracing:
+          _navigateToCanvas();
+          break;
+        case GameType.numberTracing:
+          _navigateToCanvas();
+          break;
       }
     });
   }
@@ -219,8 +309,10 @@ class _GameScreenState extends State<GameScreen> {
                 DropdownButton<GameType>(
                   value: _selectedGame,
                   onChanged: (newGame) {
-                    _selectedGame = newGame!;
-                    _resetGame();
+                    setState(() {
+                      _selectedGame = newGame!;
+                      _resetGame();
+                    });
                   },
                   items:
                       GameType.values
@@ -237,9 +329,12 @@ class _GameScreenState extends State<GameScreen> {
                   DropdownButton<Difficulty>(
                     value: _difficulty,
                     onChanged: (newLevel) {
-                      _difficulty = newLevel!;
-                      _resetGame();
+                      setState(() {
+                        _difficulty = newLevel!;
+                        _resetGame();
+                      });
                     },
+
                     items:
                         Difficulty.values
                             .map(
@@ -341,6 +436,47 @@ class _GameScreenState extends State<GameScreen> {
                         child: Text(opt),
                       );
                     }).toList(),
+              ),
+            ] else if (_selectedGame == GameType.alphabetTracing ||
+                _selectedGame == GameType.numberTracing ||
+                _selectedGame == GameType.shapeTracing) ...[
+              Text(
+                'Trace the letter: $targetLetter',
+                style: TextStyle(fontSize: 32),
+              ),
+              ElevatedButton(
+                onPressed: _navigateToCanvas,
+                child: const Text('Start Tracing'),
+              ),
+
+              SizedBox(height: 16),
+              Icon(Icons.gesture, size: 60, color: Colors.blueGrey),
+              Text('(Draw)'),
+            ] else if (_selectedGame == GameType.countObjects) ...[
+              Text(
+                'How many apples are there?',
+                style: TextStyle(fontSize: 24),
+              ),
+              Wrap(
+                children: List.generate(
+                  objectCount,
+                  (index) => Icon(Icons.apple, color: Colors.red, size: 40),
+                ),
+              ),
+              Wrap(
+                spacing: 10,
+                children:
+                    _countOptions
+                        .map(
+                          (opt) => ElevatedButton(
+                            onPressed:
+                                isCorrect == null
+                                    ? () => _checkAnswer(opt)
+                                    : null,
+                            child: Text('$opt'),
+                          ),
+                        )
+                        .toList(),
               ),
             ],
             const SizedBox(height: 30),
